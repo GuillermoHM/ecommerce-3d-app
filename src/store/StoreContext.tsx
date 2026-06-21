@@ -52,7 +52,35 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updatePlacedItem = (instanceId: string, updates: Partial<PlacedFurniture>) => {
-    setPlacedItems(items => items.map(item => item.instanceId === instanceId ? { ...item, ...updates } : item));
+    // Si el usuario está intentando mover el mueble (cambiar posición)
+    if (updates.position) {
+      const newPos = updates.position;
+      const COLLISION_DISTANCE = 1.2; // Distancia mínima de seguridad en metros
+
+      // Verificamos si la nueva posición choca con algún otro mueble
+      const hasCollision = placedItems.some(item => {
+        // No chocar consigo mismo
+        if (item.instanceId === instanceId) return false;
+        
+        // Fórmula matemática de distancia entre dos puntos (X, Z)
+        const dx = item.position[0] - newPos[0];
+        const dz = item.position[2] - newPos[2];
+        const distance = Math.sqrt(dx * dx + dz * dz);
+        
+        return distance < COLLISION_DISTANCE;
+      });
+
+      // Si hay colisión, bloqueamos la actualización y avisamos al usuario
+      if (hasCollision) {
+        showToast('⚠️ Espacio ocupado por otro mueble');
+        return; 
+      }
+    }
+
+    // Si no hay colisión, actualizamos normalmente
+    setPlacedItems(items => items.map(item => 
+      item.instanceId === instanceId ? { ...item, ...updates } : item
+    ));
   };
 
   const removePlacedItem = (instanceId: string) => {
